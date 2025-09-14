@@ -23,12 +23,22 @@ var recursive = flag.Bool("r", false, "recursive matching")
 var showLineNumbers = flag.Bool("n", false, "show line numbers matching")
 
 func GetConfig() (*Config, error) {
-	if len(os.Args) <= 2 {
+	var startingIndex int
+	for i, arg := range os.Args {
+		if i == 0 {
+			continue
+		}
+		if arg[0] != '-' {
+			startingIndex = i
+			break
+		}
+	}
+	if len(os.Args[startingIndex:]) < 2 {
 		return nil, errors.New("not enough args.")
 	}
 
 	var config Config
-	re, err := regexp.Compile(os.Args[1])
+	re, err := regexp.Compile(os.Args[startingIndex])
 	if err != nil {
 		return nil, err
 	}
@@ -40,15 +50,12 @@ func GetConfig() (*Config, error) {
 	config.ShowLineNumbers = *showLineNumbers
 
 	var paths []string
-	for _, arg := range os.Args[2:] {
-		if arg[0] != '-' {
-			paths = append(paths, arg)
-		}
+	for _, arg := range os.Args[startingIndex+1:] {
+		paths = append(paths, arg)
 	}
 	config.Paths = paths
 
 	return &config, nil
 
 }
-
 
