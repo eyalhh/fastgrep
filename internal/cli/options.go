@@ -42,6 +42,7 @@ func GetConfig() (*Config, error) {
 	}
 
 	var config Config
+	flag.Parse()
 	if *enableRegex {
 		var re *regexp.Regexp
 		var err error
@@ -58,8 +59,6 @@ func GetConfig() (*Config, error) {
 	} else {
 		config.Needle = os.Args[startingIndex]
 	}
-
-	flag.Parse()
 	config.IgnoreCase = *ignoreCase
 	config.Recursive = *recursive
 	config.ShowLineNumbers = *showLineNumbers
