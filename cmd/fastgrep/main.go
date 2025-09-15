@@ -24,7 +24,13 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(matches)
-	
+
+	for index, match := range matches {
+		fmt.Printf("\n\n\n=================%d=================\n", index)
+		fmt.Printf("line number: %d\n", match.Number)
+		for i, r := range match.Ranges {
+			fmt.Printf("match number %d: %s\n", i, match.Line[r[0]:r[1]])
+		}
+	}
 }
 
