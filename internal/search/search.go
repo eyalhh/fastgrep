@@ -2,7 +2,6 @@ package search
 
 import (
 	"github.com/eyalhh/fastgrep/internal/cli"
-	"fmt"
 	"io"
 	"strings"
 	"bufio"
