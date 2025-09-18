@@ -18,10 +18,10 @@ type Config struct {
 
 }
 
-var ignoreCase = flag.Bool("i", false, "ignore case when matching")
-var recursive = flag.Bool("r", false, "recursive matching")
-var showLineNumbers = flag.Bool("n", false, "show line numbers matching")
-var enableRegex = flag.Bool("regex", false, "enable regex")
+var ignoreCase = 		flag.Bool("i", false, "ignore case when matching")
+var recursive = 		flag.Bool("r", false, "recursive matching")
+var showLineNumbers = 	flag.Bool("n", false, "show line numbers matching")
+var enableRegex = 		flag.Bool("regex", false, "enable regex")
 
 func GetConfig() (*Config, error) {
 	var startingIndex int 

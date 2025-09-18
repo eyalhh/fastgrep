@@ -29,7 +29,7 @@ func main() {
 
 	for _, match := range matches {
 		highlightedLine := highlight.HighlightGreen(match.Line, match.Ranges)
-		fmt.Printf("line %d: %s\n", match.Number, highlightedLine)
+		fmt.Printf("%s:line %d: %s\n", file.Name(), match.Number, highlightedLine)
 	}
 
 
