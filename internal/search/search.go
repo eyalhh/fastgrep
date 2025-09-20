@@ -21,6 +21,7 @@ func SearchFile(r io.Reader, conf *cli.Config) ([]Match, error) {
 
 	counter := 0
 	for scanner.Scan() {
+		// define the currentmatch here for zeroing out the attributes every loop
 		var currentMatch Match
 		counter++
 		line := scanner.Text()
