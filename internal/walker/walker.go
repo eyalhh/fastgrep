@@ -4,6 +4,7 @@ package walker
 import (
 	"fmt"
 	"sync"
+	"strings"
 	"os"
 	"path/filepath"
 	"github.com/eyalhh/fastgrep/internal/search"
@@ -89,7 +90,7 @@ func (w *Walker) walkDir(dir string, n *sync.WaitGroup, conf *cli.Config, matche
 		return err
 	}
 	for _, entry := range entries {
-		if ignore.Match(entry.Name(), patterns) {
+		if ignore.Match(entry.Name(), patterns) || strings.HasPrefix(filepath.Base(entry.Name()), "."){
 			continue
 		}
 		fullpath := filepath.Join(dir, entry.Name())
