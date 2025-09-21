@@ -2,6 +2,7 @@ package search
 
 import (
 	"github.com/eyalhh/fastgrep/internal/cli"
+	"os"
 	"io"
 	"strings"
 	"bufio"
@@ -10,6 +11,7 @@ import (
 type Range [2]int
 
 type Match struct {
+	FileName string
 	Line string
 	Ranges []Range
 	Number int
@@ -23,6 +25,9 @@ func SearchFile(r io.Reader, conf *cli.Config) ([]Match, error) {
 	for scanner.Scan() {
 		// define the currentmatch here for zeroing out the attributes every loop
 		var currentMatch Match
+		if res, ok := r.(*os.File); ok {
+			currentMatch.FileName = res.Name()
+		}
 		counter++
 		line := scanner.Text()
 		if conf.Pattern != nil {

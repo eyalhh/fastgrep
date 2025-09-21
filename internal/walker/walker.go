@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"github.com/eyalhh/fastgrep/internal/search"
 	"github.com/eyalhh/fastgrep/internal/cli"
+	"github.com/eyalhh/fastgrep/internal/ignore"
 )
 type Walker struct {
 	paths []string
@@ -21,9 +22,17 @@ func NewWalker(paths []string, maxWalkers int) *Walker {
 
 func (w *Walker) Walk(conf *cli.Config, matches chan []search.Match) {
 
+	patterns, err := ignore.Load(".grepignore")
+	if err != nil {
+		fmt.Println(err)
+	}
+
 	var n sync.WaitGroup
 
 	for _, root := range w.paths {
+		if ignore.Match(root, patterns) {
+			continue
+		}
 		fi, err := os.Stat(root)
 		if err != nil {
 			if os.IsNotExist(err) {
@@ -48,7 +57,7 @@ func (w *Walker) Walk(conf *cli.Config, matches chan []search.Match) {
 			}(root)
 		} else {
 			n.Add(1)
-			go w.walkDir(root, &n, conf, matches)
+			go w.walkDir(root, &n, conf, matches, patterns)
 		}
 	}
 
@@ -58,7 +67,7 @@ func (w *Walker) Walk(conf *cli.Config, matches chan []search.Match) {
 	}()
 }
 
-func (w *Walker) walkDir(dir string, n *sync.WaitGroup, conf *cli.Config, matches chan []search.Match) error {
+func (w *Walker) walkDir(dir string, n *sync.WaitGroup, conf *cli.Config, matches chan []search.Match, patterns []string) error {
 	defer n.Done()
 	entries, err := w.dirents(dir)
 	if err != nil {
@@ -66,10 +75,13 @@ func (w *Walker) walkDir(dir string, n *sync.WaitGroup, conf *cli.Config, matche
 		return err
 	}
 	for _, entry := range entries {
+		if ignore.Match(entry.Name(), patterns) {
+			continue
+		}
 		fullpath := filepath.Join(dir, entry.Name())
 		if entry.IsDir() {
 			n.Add(1)
-			go w.walkDir(fullpath, n, conf, matches)
+			go w.walkDir(fullpath, n, conf, matches, patterns)
 		} else {
 			file, err := os.Open(fullpath)
 			if err != nil {

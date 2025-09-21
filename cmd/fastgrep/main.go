@@ -14,19 +14,18 @@ func main() {
 		fmt.Println(err.Error())
 		panic(err)
 	}
+
 	walker := walker.NewWalker(config.Paths, 20)
 	matches := make(chan []search.Match)
 	walker.Walk(config, matches)
 	
 	
-	fmt.Printf("the options of the search:\n\nignore-case: %t, recursive: %t, show-line-numbers: %t, paths: %v, needle: %s\n\n\nMathces are:\n\n", config.IgnoreCase, config.Recursive, config.ShowLineNumbers, config.Paths, config.Needle)
+	fmt.Printf("the options of the search:\n\nignore-case: %t, recursive: %t, show-line-numbers: %t, paths: %v\n\n\nMathces are:\n\n", config.IgnoreCase, config.Recursive, config.ShowLineNumbers, config.Paths)
 
 	for fileMatches := range matches {
 		for _, match := range fileMatches {
-
 			highlightedLine := highlight.HighlightGreen(match.Line, match.Ranges)
-			fmt.Printf("line %d: %s\n", match.Number, highlightedLine)
-
+			fmt.Printf("%s: line %d: %s\n", match.FileName, match.Number, highlightedLine)
 		}
 	}
 
