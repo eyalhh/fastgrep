@@ -10,6 +10,16 @@ import (
 	"github.com/eyalhh/fastgrep/internal/cli"
 	"github.com/eyalhh/fastgrep/internal/ignore"
 )
+
+func isExecutable(path string) bool {
+	fi, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+	mode := fi.Mode()
+	return mode.IsRegular() && (mode&0111!=0)
+
+}
 type Walker struct {
 	paths []string
 	tokens chan struct{}
@@ -30,6 +40,7 @@ func (w *Walker) Walk(conf *cli.Config, matches chan []search.Match) {
 	var n sync.WaitGroup
 
 	for _, root := range w.paths {
+
 		if ignore.Match(root, patterns) {
 			continue
 		}
@@ -41,6 +52,9 @@ func (w *Walker) Walk(conf *cli.Config, matches chan []search.Match) {
 			panic(err)
 		}
 		if fi.Mode().IsRegular() {
+			if isExecutable(root) {
+				continue
+			}
 			n.Add(1)
 			go func(root string) {
 				defer n.Done()
@@ -71,7 +85,7 @@ func (w *Walker) walkDir(dir string, n *sync.WaitGroup, conf *cli.Config, matche
 	defer n.Done()
 	entries, err := w.dirents(dir)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
 		return err
 	}
 	for _, entry := range entries {
@@ -83,14 +97,17 @@ func (w *Walker) walkDir(dir string, n *sync.WaitGroup, conf *cli.Config, matche
 			n.Add(1)
 			go w.walkDir(fullpath, n, conf, matches, patterns)
 		} else {
+			if isExecutable(entry.Name()) {
+				continue
+			}
 			file, err := os.Open(fullpath)
 			if err != nil {
-				panic(err)
+				fmt.Println(err)
 				return err
 			}
 			foundMatches, err := search.SearchFile(file, conf)
 			if err != nil {
-				panic(err)
+				fmt.Println(err)
 				return err
 			}
 			matches <- foundMatches
@@ -105,7 +122,6 @@ func (w *Walker) dirents(dir string) ([]os.DirEntry, error) {
 	defer func() { <- w.tokens }()
 	entries, err := os.ReadDir(dir)
 	if err != nil {
-		panic(err)
 		return nil, fmt.Errorf("walker: %v\n", err)
 	}
 	return entries, nil
