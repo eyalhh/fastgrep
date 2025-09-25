@@ -2,6 +2,7 @@ package search
 
 import (
 	"github.com/eyalhh/fastgrep/internal/cli"
+	"fmt"
 	"os"
 	"io"
 	"strings"
@@ -20,6 +21,10 @@ type Match struct {
 func SearchFile(r io.Reader, conf *cli.Config) ([]Match, error) {
 	var result []Match
 	scanner := bufio.NewScanner(r)
+
+	const maxCapacity = 30 * 1024 * 1024
+	buf := make([]byte, 0, 64 * 1024)
+	scanner.Buffer(buf, maxCapacity)
 
 	counter := 0
 	for scanner.Scan() {
@@ -67,6 +72,9 @@ func SearchFile(r io.Reader, conf *cli.Config) ([]Match, error) {
 	}
 
 	if err := scanner.Err(); err != nil {
+		if res, ok := r.(*os.File); ok {
+			fmt.Println(res.Name())
+		}
 		return nil, err
 	}
 

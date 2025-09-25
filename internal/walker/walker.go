@@ -4,12 +4,11 @@ package walker
 import (
 	"fmt"
 	"sync"
-	"strings"
 	"os"
 	"path/filepath"
 	"github.com/eyalhh/fastgrep/internal/search"
 	"github.com/eyalhh/fastgrep/internal/cli"
-	"github.com/eyalhh/fastgrep/internal/ignore"
+	"github.com/sabhiram/go-gitignore"
 )
 
 func isExecutable(path string) bool {
@@ -33,17 +32,31 @@ func NewWalker(paths []string, maxWalkers int) *Walker {
 
 func (w *Walker) Walk(conf *cli.Config, matches chan []search.Match) {
 
+	/*
 	patterns, err := ignore.Load(".grepignore")
 	if err != nil {
-		fmt.Println(err)
+		if os.IsNotExist(err) {
+			fmt.Println("you dont have a .grepignore in your current directory , ignoring only binaries at deafult.")
+		} 
 	}
+	*/ 
+	
 
+	// using third party package to parse .grepignore instead:
+	gi, err := ignore.CompileIgnoreFile(".grepignore")
+	if err != nil {
+		if os.IsNotExist(err) {
+			fmt.Println("you dont have a .grepignore, ignore only binaries at deafult..")
+		}
+	}
 	var n sync.WaitGroup
 
 	for _, root := range w.paths {
 
-		if ignore.Match(root, patterns) {
-			continue
+		if gi != nil {
+			if gi.MatchesPath(root) {
+				continue
+			}
 		}
 		fi, err := os.Stat(root)
 		if err != nil {
@@ -72,7 +85,7 @@ func (w *Walker) Walk(conf *cli.Config, matches chan []search.Match) {
 			}(root)
 		} else {
 			n.Add(1)
-			go w.walkDir(root, &n, conf, matches, patterns)
+			go w.walkDir(root, &n, conf, matches, gi)
 		}
 	}
 
@@ -82,7 +95,7 @@ func (w *Walker) Walk(conf *cli.Config, matches chan []search.Match) {
 	}()
 }
 
-func (w *Walker) walkDir(dir string, n *sync.WaitGroup, conf *cli.Config, matches chan []search.Match, patterns []string) error {
+func (w *Walker) walkDir(dir string, n *sync.WaitGroup, conf *cli.Config, matches chan []search.Match, gi *ignore.GitIgnore) error {
 	defer n.Done()
 	entries, err := w.dirents(dir)
 	if err != nil {
@@ -90,13 +103,16 @@ func (w *Walker) walkDir(dir string, n *sync.WaitGroup, conf *cli.Config, matche
 		return err
 	}
 	for _, entry := range entries {
-		if ignore.Match(entry.Name(), patterns) || strings.HasPrefix(filepath.Base(entry.Name()), "."){
-			continue
+		if gi != nil {
+			if gi.MatchesPath(entry.Name()) {
+				continue
+			}
+
 		}
 		fullpath := filepath.Join(dir, entry.Name())
 		if entry.IsDir() {
 			n.Add(1)
-			go w.walkDir(fullpath, n, conf, matches, patterns)
+			go w.walkDir(fullpath, n, conf, matches, gi)
 		} else {
 			if isExecutable(entry.Name()) {
 				continue
